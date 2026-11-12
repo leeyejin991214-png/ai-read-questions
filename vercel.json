@@ -1,0 +1,8 @@
+{
+  "outputDirectory": "public",
+  "functions": {
+    "api/generate-questions.js": {
+      "maxDuration": 300
+    }
+  }
+}

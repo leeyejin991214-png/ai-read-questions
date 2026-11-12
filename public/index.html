@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI 3단계 독해 질문 생성기</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" crossorigin="anonymous" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v3.2.1/dist/web/static/pretendard.min.css" />
+  <style>
+    body { font-family: 'Pretendard', sans-serif; }
+    .toast-enter { transform: translateY(100%); opacity: 0; }
+    .toast-enter-active { transform: translateY(0); opacity: 1; transition: all 300ms ease-out; }
+    .toast-exit { transform: translateY(100%); opacity: 0; transition: all 300ms ease-in; }
+    .tab-active { border-bottom: 2px solid #10b981; color: #047857; font-weight: 700; }
+    .tab-inactive { color: #6b7280; font-weight: 500; cursor: pointer; border-bottom: 2px solid transparent; }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-green-50 to-emerald-100 min-h-screen p-4 sm:p-8 text-gray-800">
+  <div class="max-w-5xl mx-auto space-y-6">
+    <header class="text-center py-6">
+      <h1 class="text-3xl sm:text-4xl font-bold text-gray-900 mb-3">💡 AI 3단계 독해 질문 생성기</h1>
+      <p class="text-gray-600">읽기 자료를 넣으면 내용 확인, 추론, 토의를 위한 맞춤형 발문을 만들어 드립니다.</p>
+    </header>
+
+    <div class="bg-white p-6 rounded-2xl shadow-sm border border-emerald-100">
+      <div class="flex border-b border-gray-200 mb-6">
+        <button id="tabText" class="pb-3 px-4 tab-active w-1/2 text-center transition-colors">📝 텍스트 입력</button>
+        <button id="tabPdf" class="pb-3 px-4 tab-inactive w-1/2 text-center transition-colors hover:text-emerald-600">📄 PDF 업로드</button>
+      </div>
+
+      <div id="viewText" class="block">
+        <textarea id="textInput" class="w-full h-48 p-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none resize-none" placeholder="여기에 읽기 자료나 지문을 붙여넣으세요... (최대 5000자)" maxlength="5000"></textarea>
+        <div class="text-right text-sm text-gray-500 mt-2"><span id="charCount">0</span> / 5000자</div>
+      </div>
+
+      <div id="viewPdf" class="hidden">
+        <div id="dropZone" class="border-2 border-dashed border-emerald-300 rounded-xl p-10 text-center cursor-pointer hover:bg-emerald-50 transition-colors">
+          <p class="text-gray-700 font-medium mb-1">여기를 클릭하거나 PDF 파일을 드래그하여 업로드하세요</p>
+          <p class="text-sm text-gray-400">지원 형식: .pdf (최대 4MB)</p>
+          <input type="file" id="fileInput" accept="application/pdf" class="hidden">
+        </div>
+        <div id="fileInfo" class="hidden mt-4 flex items-center justify-center text-sm font-medium text-gray-700">
+          <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 mr-2"></span>
+          <span id="fileNameDisplay"></span>
+        </div>
+      </div>
+
+      <div id="accessCodeWrapper" class="hidden mt-6 text-center">
+        <label for="accessCodeInput" class="block text-sm font-medium text-gray-700 mb-1">접속 코드</label>
+        <input type="password" id="accessCodeInput" placeholder="코드를 입력하세요" class="w-full max-w-xs px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none text-center mx-auto">
+      </div>
+
+      <div class="mt-8 text-center">
+        <button id="submitBtn" class="bg-emerald-600 text-white px-8 py-3 rounded-lg font-semibold shadow hover:bg-emerald-700 transition disabled:bg-gray-400 disabled:cursor-not-allowed">
+          ✨ 질문 세트 생성하기
+        </button>
+      </div>
+
+      <div id="loadingUI" class="hidden mt-6 flex flex-col items-center justify-center space-y-3">
+        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600"></div>
+        <p class="text-emerald-700 font-medium">지문을 읽고 질문을 구성하는 중입니다...</p>
+      </div>
+
+      <div id="errorBox" class="hidden mt-6 bg-red-50 border border-red-200 text-red-600 p-4 rounded-lg text-center font-medium"></div>
+    </div>
+
+    <div id="resultSection" class="hidden space-y-6 pb-12">
+      <div class="flex flex-col sm:flex-row justify-between items-end border-b border-gray-300 pb-2 gap-4">
+        <h2 class="text-2xl font-bold text-gray-800">🎯 생성된 질문 세트</h2>
+        <button id="copyBtn" class="text-sm bg-gray-800 text-white px-5 py-2 rounded hover:bg-gray-700 transition font-medium">📋 전체 복사하기</button>
+      </div>
+
+      <div class="bg-white rounded-xl shadow-sm border-l-4 border-blue-500 p-6">
+        <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">🔎 1단계: 사실 확인 질문 (3개)</h3>
+        <ul id="resLevel1" class="space-y-3"></ul>
+      </div>
+
+      <div class="bg-white rounded-xl shadow-sm border-l-4 border-purple-500 p-6">
+        <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">🤔 2단계: 추론 및 비판적 사고 질문 (3개)</h3>
+        <ul id="resLevel2" class="space-y-3"></ul>
+      </div>
+
+      <div class="bg-white rounded-xl shadow-sm border-l-4 border-orange-400 p-6">
+        <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">💡 3단계: 창의적 적용 및 토의 질문 (2개)</h3>
+        <ul id="resLevel3" class="space-y-3"></ul>
+      </div>
+    </div>
+  </div>
+  <div id="toastContainer" class="fixed bottom-6 right-6 flex flex-col gap-2 z-50"></div>
+  <script src="app.js"></script>
+</body>
+</html>

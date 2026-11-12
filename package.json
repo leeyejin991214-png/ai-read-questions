@@ -1,0 +1,9 @@
+{
+  "name": "ai-reading-questions",
+  "version": "1.0.0",
+  "description": "AI 3단계 독해 질문 생성기 (Vercel 배포용)",
+  "private": true,
+  "engines": {
+    "node": ">=20"
+  }
+}
